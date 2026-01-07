@@ -2,176 +2,191 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>TXT ⇄ M3U 转换（支持全能繁→简）</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<!-- OpenCC（全能繁体 → 简体） -->
-<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/opencc.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="format-detection" content="telephone=no">
+<title>IPTV工具集 - LOGO模糊搜索</title>
 
 <style>
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
-    background: #f5f5f5;
-    margin: 0;
-    padding: 15px;
-}
-.container {
-    max-width: 1000px;
-    margin: auto;
-    background: #fff;
-    padding: 15px;
-    border-radius: 8px;
-}
-h2 { margin-top: 0; }
-textarea {
-    width: 100%;
-    height: 240px;
-    box-sizing: border-box;
-    margin: 10px 0;
-    padding: 10px;
-    font-family: Consolas, monospace;
-}
-.controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-}
-button {
-    padding: 8px 14px;
-    cursor: pointer;
-}
-.switch {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.footer {
-    margin-top: 10px;
-    font-size: 13px;
-    color: #666;
-}
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",Arial,sans-serif}
+body{background:#f5f5f5;padding:15px}
+.container{background:#fff;padding:20px 15px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+h1{text-align:center;margin-bottom:20px;font-size:18px}
+.logo-search{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #eee}
+.search-bar{display:flex;gap:10px;margin-bottom:15px}
+.search-bar input{flex:1;padding:12px 16px;border:1px solid #ddd;border-radius:8px}
+.search-bar button{padding:0 20px;background:#1677ff;color:#fff;border:none;border-radius:8px}
+.logo-result{max-height:300px;overflow:auto;border:1px solid #eee;border-radius:8px;padding:10px;display:none}
+.logo-item{display:flex;gap:10px;padding:10px;border-bottom:1px solid #f5f5f5}
+.logo-item:hover{background:#e8f4ff}
+.preview{width:60px;height:30px;border:1px solid #eee;display:flex;align-items:center;justify-content:center}
+.preview img{max-width:100%;max-height:100%}
+.input-item{margin-bottom:15px}
+input,textarea{width:100%;padding:12px 16px;border:1px solid #ddd;border-radius:8px}
+textarea{min-height:180px}
+.checkbox-item{display:flex;align-items:center;margin:10px 0}
+.checkbox-item input{margin-right:8px}
+.btn-group,.func-btn{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0}
+button{flex:1;padding:12px;border:none;border-radius:8px;background:#1677ff;color:#fff}
+.download-tip{text-align:center;font-size:12px;color:#666}
 </style>
 </head>
 
 <body>
 <div class="container">
-    <h2>TXT ⇄ M3U 转换工具</h2>
+<h1>IPTV工具集 - LOGO模糊搜索</h1>
 
-    <div class="controls">
-        <input type="file" id="fileInput" accept=".txt,.m3u,.m3u8">
-        <button onclick="txtToM3u()">TXT → M3U</button>
-        <button onclick="m3uToTxt()">M3U → TXT</button>
-        <button onclick="download()">下载结果</button>
-
-        <div class="switch">
-            <input type="checkbox" id="enableTc2Sc" checked>
-            <label>启用 繁体 → 简体（全能）</label>
-        </div>
-    </div>
-
-    <textarea id="input" placeholder="输入 / 上传 TXT 或 M3U 内容"></textarea>
-    <textarea id="output" placeholder="转换结果"></textarea>
-
-    <div class="footer">
-        ✔ 纯浏览器使用 ｜ ✔ 支持 GitHub Pages ｜ ✔ OpenCC 全量繁转简
-    </div>
+<div class="logo-search">
+<div class="search-bar">
+<input id="searchKey" placeholder="输入关键词（如 CCTV / TVB / NOW）">
+<button onclick="fuzzySearchLogo()">模糊搜索</button>
+</div>
+<div id="logoResult" class="logo-result"></div>
 </div>
 
+<div class="input-item">
+<label>EPG 地址</label>
+<input id="epgUrl" value="https://ie.erw.cc/all.xml.gz">
+</div>
+
+<div class="input-item">
+<label>Logo 基础地址</label>
+<input id="logoUrlInput" value="https://cdn.jsdelivr.net/gh/1996TV/LOGO@main/">
+</div>
+
+<div class="input-item">
+<label>自定义净化关键词</label>
+<input id="customCleanKeywords" placeholder="多个关键词逗号分隔">
+</div>
+
+<div class="checkbox-item">
+<input type="checkbox" id="cleanName" checked>
+<label>净化频道名</label>
+</div>
+
+<div class="checkbox-item">
+<input type="checkbox" id="removeReplay" checked>
+<label>去除回看 / 回放 / 时移</label>
+</div>
+
+<!-- ★ 繁转简开关（新增） -->
+<div class="checkbox-item">
+<input type="checkbox" id="enableTc2Sc" checked>
+<label>繁体 → 简体（港台全能）</label>
+</div>
+
+<div class="upload">
+<input type="file" accept=".txt,.m3u,.m3u8" onchange="readFile(this)">
+</div>
+
+<textarea id="inputContent" placeholder="粘贴或上传内容"></textarea>
+
+<div class="btn-group">
+<button onclick="txtToM3u()">TXT → M3U</button>
+<button onclick="m3uToTxt()">M3U → TXT</button>
+<button onclick="clearAll()">清空</button>
+</div>
+
+<div class="func-btn">
+<button onclick="downloadResult()">下载结果</button>
+<button onclick="copyResult()">复制结果</button>
+</div>
+
+<div class="download-tip">浏览器直接使用 / GitHub Pages 可用</div>
+
+<textarea id="output" placeholder="处理结果" readonly></textarea>
+</div>
+
+<!-- OpenCC（繁转简核心） -->
+<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/opencc.min.js"></script>
+
 <script>
-/* =======================
-   文件读取
-   ======================= */
-document.getElementById('fileInput').addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-        document.getElementById('input').value = reader.result;
-    };
-    reader.readAsText(file, 'utf-8');
-});
+/* ========= 繁转简补丁（不影响原功能） ========= */
+let openccConv=null;
+function tc2sc(t){
+ if(!document.getElementById('enableTc2Sc').checked) return t;
+ if(!openccConv) openccConv=OpenCC.Converter({from:'t',to:'s'});
+ return openccConv(t);
+}
+/* ============================================ */
 
-/* =======================
-   OpenCC 全能繁 → 简
-   ======================= */
-let openccConverter = null;
+const repoOwner="1996TV",repoName="LOGO";
+const cdnBase=`https://cdn.jsdelivr.net/gh/${repoOwner}/${repoName}@main/`;
+let allLogoFiles=[];
 
-function tc2sc(text) {
-    const enable = document.getElementById('enableTc2Sc');
-    if (!enable || !enable.checked) return text;
-
-    if (!openccConverter) {
-        openccConverter = OpenCC.Converter({ from: 't', to: 's' });
-    }
-    return openccConverter(text);
+async function fuzzySearchLogo(){
+ const key=searchKey.value.toLowerCase();
+ if(!key) return;
+ if(!allLogoFiles.length){
+  const r=await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/`);
+  allLogoFiles=(await r.json()).filter(f=>f.name.endsWith('.png'));
+ }
+ const rs=allLogoFiles.filter(f=>f.name.toLowerCase().includes(key));
+ logoResult.style.display='block';
+ logoResult.innerHTML=rs.map(f=>`
+ <div class="logo-item">
+  <div class="preview"><img src="${cdnBase+f.name}"></div>
+  <div>${f.name}</div>
+ </div>`).join('');
 }
 
-/* =======================
-   TXT → M3U
-   支持：频道名,URL
-   ======================= */
-function txtToM3u() {
-    const input = document.getElementById('input').value;
-    if (!input.trim()) return;
-
-    const lines = input.split(/\r?\n/);
-    let out = '#EXTM3U\n';
-
-    lines.forEach(line => {
-        line = line.trim();
-        if (!line || line.startsWith('#')) return;
-
-        const parts = line.split(',');
-        if (parts.length < 2) return;
-
-        const name = tc2sc(parts[0].trim());
-        const url = parts.slice(1).join(',').trim();
-
-        out += `#EXTINF:-1,${name}\n${url}\n`;
-    });
-
-    document.getElementById('output').value = out.trim();
+function readFile(i){
+ const r=new FileReader();
+ r.onload=e=>inputContent.value=e.target.result;
+ r.readAsText(i.files[0]);
 }
 
-/* =======================
-   M3U → TXT
-   ======================= */
-function m3uToTxt() {
-    const input = document.getElementById('input').value;
-    if (!input.trim()) return;
-
-    const lines = input.split(/\r?\n/);
-    let name = '';
-    let out = [];
-
-    lines.forEach(line => {
-        line = line.trim();
-        if (line.startsWith('#EXTINF')) {
-            name = line.split(',').pop().trim();
-            name = tc2sc(name);
-        } else if (line && !line.startsWith('#') && name) {
-            out.push(`${name},${line}`);
-            name = '';
-        }
-    });
-
-    document.getElementById('output').value = out.join('\n');
+function cleanNameFn(n){
+ if(!cleanName.checked) return n;
+ let ks=["高清","HD","超清",...customCleanKeywords.value.split(',')];
+ ks.forEach(k=>n=n.replace(k,''));
+ return n.trim();
 }
 
-/* =======================
-   下载结果
-   ======================= */
-function download() {
-    const text = document.getElementById('output').value;
-    if (!text.trim()) return;
+function isReplay(n){return /(回看|回放|时移)/.test(n)}
 
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'result.txt';
-    a.click();
-    URL.revokeObjectURL(a.href);
+function txtToM3u(){
+ const epg=epgUrl.value;
+ const logoBase=logoUrlInput.value;
+ let out=`#EXTM3U x-tvg-url="${epg}"\n`;
+ inputContent.value.split('\n').forEach(l=>{
+  if(!l.includes(',')) return;
+  let [n,u]=l.split(',');
+  if(removeReplay.checked && isReplay(n)) return;
+  let name=tc2sc(cleanNameFn(n));   // ★ 繁转简入口
+  out+=`#EXTINF:-1 tvg-name="${name}" tvg-logo="${logoBase}${name}.png",${name}\n${u}\n`;
+ });
+ output.value=out;
+}
+
+function m3uToTxt(){
+ let o='';
+ inputContent.value.split('\n').forEach((l,i,a)=>{
+  if(l.startsWith('#EXTINF')){
+   let n=l.split(',').pop();
+   let name=tc2sc(cleanNameFn(n));  // ★ 繁转简入口
+   let u=a[i+1]||'';
+   o+=`${name},${u}\n`;
+  }
+ });
+ output.value=o;
+}
+
+function downloadResult(){
+ const b=new Blob([output.value]);
+ const a=document.createElement('a');
+ a.href=URL.createObjectURL(b);
+ a.download='iptv.txt';
+ a.click();
+}
+
+function copyResult(){
+ navigator.clipboard.writeText(output.value);
+ alert('已复制');
+}
+
+function clearAll(){
+ inputContent.value='';
+ output.value='';
 }
 </script>
 </body>
