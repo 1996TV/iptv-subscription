@@ -2,133 +2,153 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>TXT ⇄ M3U 转换工具</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPTV 工具集 V2（浏览器版）</title>
+
+<!-- OpenCC 繁体转简体 -->
+<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/browser.min.js"></script>
+
 <style>
-body{font-family:Arial;background:#f5f6f7}
-.container{width:95%;max-width:900px;margin:30px auto;background:#fff;padding:20px;border-radius:8px}
-h2{text-align:center}
-input,textarea,button,select{width:100%;margin:6px 0;padding:8px}
-textarea{height:160px}
-.btns{display:flex;flex-wrap:wrap;gap:8px}
-button{flex:1;background:#409eff;color:#fff;border:0;border-radius:4px;cursor:pointer}
-button:hover{opacity:.9}
-label{display:block;margin:4px 0}
+body{background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",Arial}
+.container{max-width:960px;margin:20px auto;background:#fff;padding:20px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+h1{text-align:center;font-size:20px;margin-bottom:20px}
+.panel{border:1px solid #eee;border-radius:10px;padding:15px;margin-bottom:20px}
+.panel h3{margin-bottom:10px;font-size:16px}
+input,textarea,button{width:100%;padding:10px;margin:6px 0;border-radius:8px;border:1px solid #ddd}
+button{background:#1677ff;color:#fff;border:none;cursor:pointer}
+button.gray{background:#666}
+.flex{display:flex;gap:10px;flex-wrap:wrap}
+.logo-item{display:flex;align-items:center;gap:10px;border-bottom:1px solid #eee;padding:8px 0}
+.logo-item img{width:80px;height:40px;object-fit:contain;border:1px solid #eee}
+.small{font-size:12px;color:#666}
 </style>
 </head>
 
 <body>
 <div class="container">
-<h2>TXT ⇄ M3U 转换工具</h2>
+<h1>📺 IPTV 工具集 V2（浏览器可用）</h1>
 
-<input id="epg" placeholder="EPG 地址（TXT → M3U）" value="https://e.erw.cc/all.xml.gz">
-<input id="logo" placeholder="基础 Logo 地址（以 / 结尾）" value="https://cdn.jsdelivr.net/gh/1996TV/LOGO1@main/icon/">
-
-<label><input type="checkbox" id="clean" checked> TXT转M3U时频道名净化</label>
-<label><input type="checkbox" id="prefer" checked> M3U转TXT优先使用 tvg-name / tvg-id</label>
-<label><input type="checkbox" id="regroup"> 重新分组（忽略原分组）</label>
-
-<textarea id="input" placeholder="在此粘贴 TXT 或 M3U 列表…"></textarea>
-
-<div class="btns">
-<button onclick="txtToM3u()">TXT → M3U</button>
-<button onclick="m3uToTxt()">M3U → TXT</button>
-<button onclick="reGroup()">一键重新分组</button>
-<button onclick="clearAll()">清空内容</button>
-<button onclick="copyOut()">复制结果</button>
-<button onclick="downloadOut()">下载文件</button>
+<!-- LOGO 搜索 -->
+<div class="panel">
+<h3>LOGO 模糊搜索</h3>
+<div class="flex">
+<input id="searchKey" placeholder="如：NOW 星影 / 翡翠 / CCTV / Movie">
+<button onclick="searchLogo()">搜索</button>
+</div>
+<div id="logoResult"></div>
 </div>
 
-<select id="downloadType">
-  <option value="m3u">下载为 .m3u</option>
-  <option value="txt">下载为 .txt</option>
-</select>
+<!-- 转换 -->
+<div class="panel">
+<h3>TXT ⇄ M3U 转换</h3>
+<input type="file" accept=".txt,.m3u,.m3u8" onchange="loadFile(this)">
+<textarea id="input" placeholder="粘贴或上传内容"></textarea>
+<div class="flex">
+<button onclick="txtToM3u()">TXT → M3U</button>
+<button onclick="m3uToTxt()">M3U → TXT</button>
+<button class="gray" onclick="clearAll()">清空</button>
+</div>
+<textarea id="output" placeholder="输出结果"></textarea>
+</div>
 
-<textarea id="output" placeholder="转换结果将在这里显示…"></textarea>
 </div>
 
 <script>
-function cleanName(n){
-  return n.replace(/\s+/g,'')
-          .replace(/高清|HD|超清|频道/g,'');
+/* ===== 基础配置 ===== */
+const repoOwner="1996TV";
+const repoName="LOGO";
+const cdnBase=`https://cdn.jsdelivr.net/gh/${repoOwner}/${repoName}@main/`;
+const opencc=OpenCC.Converter({from:'t',to:'s'});
+
+let logoFiles=[];
+
+/* ===== 别名映射（重点） ===== */
+const ALIAS_MAP={
+"NOW星影台":"NOW星影",
+"NOW 星影台":"NOW星影",
+"NOW Movie":"NOW星影",
+"翡翠台":"翡翠台",
+"無綫新聞台":"无线新闻",
+"无线新闻台":"无线新闻",
+"HOY TV":"HOY资讯",
+"本港台":"本港台"
+};
+
+/* ===== 工具函数 ===== */
+function toSimple(t){return opencc(t||"")}
+function normalize(name){
+name=toSimple(name).replace(/高清|HD|超清|4K/ig,"").trim();
+return ALIAS_MAP[name]||name;
 }
 
+/* ===== 递归读取 LOGO 仓库 ===== */
+async function loadLogos(path=""){
+const api=`https://api.github.com/repos/${repoOwner}/${repoName}/contents/${path}`;
+const res=await fetch(api);
+const data=await res.json();
+for(const f of data){
+if(f.type==="file" && f.name.endsWith(".png")){
+logoFiles.push({name:f.name.replace(".png",""),url:cdnBase+f.path});
+}
+if(f.type==="dir") await loadLogos(f.path);
+}
+}
+
+/* ===== LOGO 搜索 ===== */
+async function searchLogo(){
+const key=toSimple(document.getElementById("searchKey").value.trim());
+if(!key)return;
+if(!logoFiles.length) await loadLogos();
+const res=logoFiles.filter(l=>l.name.toLowerCase().includes(key.toLowerCase()));
+const box=document.getElementById("logoResult");
+box.innerHTML=res.length?res.map(l=>`
+<div class="logo-item">
+<img src="${l.url}">
+<div>
+<div>${l.name}</div>
+<div class="small">${l.url}</div>
+</div>
+</div>`).join(""):"<p class='small'>未找到</p>";
+}
+
+/* ===== 文件 ===== */
+function loadFile(i){
+const f=i.files[0];if(!f)return;
+const r=new FileReader();
+r.onload=e=>input.value=e.target.result;
+r.readAsText(f);
+}
+
+/* ===== TXT → M3U ===== */
 function txtToM3u(){
-  let epg=document.getElementById('epg').value.trim();
-  let logo=document.getElementById('logo').value.trim();
-  let clean=document.getElementById('clean').checked;
-  let lines=input.value.split('\n');
-  let out=`#EXTM3U x-tvg-url="${epg}"\n`;
-
-  lines.forEach(l=>{
-    if(!l.includes(','))return;
-    let [name,url]=l.split(',');
-    name=name.trim();
-    url=url.trim();
-    if(clean) name=cleanName(name);
-    let logoUrl=logo?logo+name+'.png':'';
-    out+=`#EXTINF:-1 tvg-name="${name}" tvg-logo="${logoUrl}",${name}\n${url}\n`;
-  });
-  output.value=out;
+let t=toSimple(input.value.trim());
+let out="#EXTM3U\n";
+t.split("\n").forEach(l=>{
+if(!l.includes(","))return;
+let [n,u]=l.split(",");
+n=normalize(n);
+out+=`#EXTINF:-1 tvg-logo="${cdnBase}${n}.png",${n}\n${u}\n`;
+});
+output.value=out;
 }
 
+/* ===== M3U → TXT ===== */
 function m3uToTxt(){
-  let prefer=document.getElementById('prefer').checked;
-  let lines=input.value.split('\n');
-  let name='';
-  let out='';
-  lines.forEach(l=>{
-    if(l.startsWith('#EXTINF')){
-      let m=l.match(/tvg-name="([^"]+)"/);
-      let n=l.match(/,(.*)$/);
-      name=prefer && m?m[1]:(n?n[1]:'');
-    }else if(l.startsWith('http')){
-      out+=`${name},${l}\n`;
-    }
-  });
-  output.value=out;
+let t=toSimple(input.value.trim()).split("\n");
+let out="";
+for(let i=0;i<t.length;i++){
+if(t[i].startsWith("#EXTINF")){
+let name=t[i].split(",").pop();
+name=normalize(name);
+let url=t[i+1]||"";
+out+=`${name},${url}\n`;
+i++;
+}
+}
+output.value=out;
 }
 
-function reGroup(){
-  let lines=input.value.split('\n');
-  let out='#EXTM3U\n';
-  lines.forEach(l=>{
-    if(l.startsWith('#EXTINF')){
-      out+=l.replace(/group-title="[^"]*"/,'group-title="默认"')+'\n';
-    }else if(l.startsWith('http')){
-      out+=l+'\n';
-    }
-  });
-  output.value=out;
-}
-
-function clearAll(){
-  input.value='';
-  output.value='';
-}
-
-function copyOut(){
-  output.select();
-  document.execCommand('copy');
-  alert('已复制');
-}
-
-function downloadOut(){
-  const text = output.value;
-  if(!text){
-    alert('没有可下载内容');
-    return;
-  }
-  const type = document.getElementById('downloadType').value;
-  const blob = new Blob([text], {type: 'text/plain;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'playlist.' + type;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
+function clearAll(){input.value="";output.value=""}
 </script>
 </body>
 </html>
