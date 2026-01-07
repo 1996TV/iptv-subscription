@@ -1,116 +1,177 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="format-detection" content="telephone=no">
-    <title>IPTV工具集 - LOGO模糊搜索</title>
+<meta charset="UTF-8">
+<title>TXT ⇄ M3U 转换（支持全能繁→简）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- 【新增】OpenCC 繁体转简体（浏览器版） -->
-    <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/browser.min.js"></script>
+<!-- OpenCC（全能繁体 → 简体） -->
+<script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/opencc.min.js"></script>
 
-    <style>
-        /* ===== 原样保留 ===== */
-        * { margin:0; padding:0; box-sizing:border-box; font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",Arial,sans-serif;}
-        body { background:#f5f5f5; padding:15px; }
-        .container { background:#fff; padding:20px 15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.08);}
-        h1 { font-size:18px; text-align:center; margin-bottom:20px;}
-        textarea,input,button { width:100%; padding:12px; margin:6px 0; border-radius:8px; border:1px solid #ddd;}
-        button { background:#1677ff; color:#fff; border:none; cursor:pointer;}
-        .btn-group { display:flex; gap:8px; flex-wrap:wrap;}
-    </style>
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+    background: #f5f5f5;
+    margin: 0;
+    padding: 15px;
+}
+.container {
+    max-width: 1000px;
+    margin: auto;
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+}
+h2 { margin-top: 0; }
+textarea {
+    width: 100%;
+    height: 240px;
+    box-sizing: border-box;
+    margin: 10px 0;
+    padding: 10px;
+    font-family: Consolas, monospace;
+}
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+button {
+    padding: 8px 14px;
+    cursor: pointer;
+}
+.switch {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.footer {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #666;
+}
+</style>
 </head>
 
 <body>
 <div class="container">
-    <h1>IPTV工具集 - LOGO模糊搜索</h1>
+    <h2>TXT ⇄ M3U 转换工具</h2>
 
-    <input type="file" id="fileInput" accept=".txt,.m3u,.m3u8" onchange="readFile(this)">
-    <textarea id="inputContent" placeholder="粘贴或上传 TXT / M3U 内容"></textarea>
-
-    <div class="btn-group">
+    <div class="controls">
+        <input type="file" id="fileInput" accept=".txt,.m3u,.m3u8">
         <button onclick="txtToM3u()">TXT → M3U</button>
         <button onclick="m3uToTxt()">M3U → TXT</button>
-        <button onclick="clearAll()">清空</button>
+        <button onclick="download()">下载结果</button>
+
+        <div class="switch">
+            <input type="checkbox" id="enableTc2Sc" checked>
+            <label>启用 繁体 → 简体（全能）</label>
+        </div>
     </div>
 
-    <textarea id="output" placeholder="处理结果" readonly></textarea>
+    <textarea id="input" placeholder="输入 / 上传 TXT 或 M3U 内容"></textarea>
+    <textarea id="output" placeholder="转换结果"></textarea>
+
+    <div class="footer">
+        ✔ 纯浏览器使用 ｜ ✔ 支持 GitHub Pages ｜ ✔ OpenCC 全量繁转简
+    </div>
 </div>
 
 <script>
-/* ================================
-   【新增】繁体 → 简体 支持
-================================ */
-const opencc = OpenCC.Converter({ from: 't', to: 's' });
-
-function toSimplified(text) {
-    if (!text) return text;
-    try {
-        return opencc(text);
-    } catch (e) {
-        console.error('繁体转简体失败', e);
-        return text;
-    }
-}
-
-/* ===== 原有：读取文件（不改） ===== */
-function readFile(input) {
-    const file = input.files[0];
+/* =======================
+   文件读取
+   ======================= */
+document.getElementById('fileInput').addEventListener('change', e => {
+    const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = e => {
-        document.getElementById('inputContent').value = e.target.result;
+    reader.onload = () => {
+        document.getElementById('input').value = reader.result;
     };
-    reader.readAsText(file);
+    reader.readAsText(file, 'utf-8');
+});
+
+/* =======================
+   OpenCC 全能繁 → 简
+   ======================= */
+let openccConverter = null;
+
+function tc2sc(text) {
+    const enable = document.getElementById('enableTc2Sc');
+    if (!enable || !enable.checked) return text;
+
+    if (!openccConverter) {
+        openccConverter = OpenCC.Converter({ from: 't', to: 's' });
+    }
+    return openccConverter(text);
 }
 
-/* ===== TXT → M3U（仅加一行繁转简） ===== */
+/* =======================
+   TXT → M3U
+   支持：频道名,URL
+   ======================= */
 function txtToM3u() {
-    let input = document.getElementById('inputContent').value.trim();
-    if (!input) return alert('请输入TXT内容！');
+    const input = document.getElementById('input').value;
+    if (!input.trim()) return;
 
-    //【新增】繁体 → 简体
-    input = toSimplified(input);
-
-    const lines = input.split('\n');
-    let output = '#EXTM3U\n';
+    const lines = input.split(/\r?\n/);
+    let out = '#EXTM3U\n';
 
     lines.forEach(line => {
         line = line.trim();
-        if (!line || !line.includes(',')) return;
-        const [name, url] = line.split(',');
-        output += `#EXTINF:-1,${name}\n${url}\n`;
+        if (!line || line.startsWith('#')) return;
+
+        const parts = line.split(',');
+        if (parts.length < 2) return;
+
+        const name = tc2sc(parts[0].trim());
+        const url = parts.slice(1).join(',').trim();
+
+        out += `#EXTINF:-1,${name}\n${url}\n`;
     });
 
-    document.getElementById('output').value = output;
+    document.getElementById('output').value = out.trim();
 }
 
-/* ===== M3U → TXT（仅加一行繁转简） ===== */
+/* =======================
+   M3U → TXT
+   ======================= */
 function m3uToTxt() {
-    let input = document.getElementById('inputContent').value.trim();
-    if (!input) return alert('请输入M3U内容！');
+    const input = document.getElementById('input').value;
+    if (!input.trim()) return;
 
-    //【新增】繁体 → 简体
-    input = toSimplified(input);
+    const lines = input.split(/\r?\n/);
+    let name = '';
+    let out = [];
 
-    const lines = input.split('\n');
-    let output = '';
-
-    for (let i = 0; i < lines.length; i++) {
-        if (lines[i].startsWith('#EXTINF')) {
-            const name = lines[i].split(',').pop();
-            const url = lines[i + 1] || '';
-            output += `${name},${url}\n`;
-            i++;
+    lines.forEach(line => {
+        line = line.trim();
+        if (line.startsWith('#EXTINF')) {
+            name = line.split(',').pop().trim();
+            name = tc2sc(name);
+        } else if (line && !line.startsWith('#') && name) {
+            out.push(`${name},${line}`);
+            name = '';
         }
-    }
+    });
 
-    document.getElementById('output').value = output;
+    document.getElementById('output').value = out.join('\n');
 }
 
-function clearAll() {
-    document.getElementById('inputContent').value = '';
-    document.getElementById('output').value = '';
+/* =======================
+   下载结果
+   ======================= */
+function download() {
+    const text = document.getElementById('output').value;
+    if (!text.trim()) return;
+
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'result.txt';
+    a.click();
+    URL.revokeObjectURL(a.href);
 }
 </script>
 </body>
