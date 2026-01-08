@@ -20,11 +20,41 @@
             max-width: 100%;
             margin: 0 auto;
         }
-        .container {
+        /* 面板切换按钮 */
+        .tab-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 12px 0;
+            border: none;
+            border-radius: 8px;
+            background: #e5e5e5;
+            color: #333;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .tab-btn.active {
+            background: #1677ff;
+            color: #fff;
+        }
+        /* 面板容器 */
+        .panel-container {
+            width: 100%;
+        }
+        .panel {
+            display: none;
             background: #fff;
             padding: 20px 15px;
             border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        }
+        .panel.active {
+            display: block;
         }
         h1 {
             font-size: 18px;
@@ -33,12 +63,7 @@
             color: #333;
             font-weight: 600;
         }
-        /* LOGO模糊搜索模块 */
-        .logo-search {
-            margin-bottom: 20px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #eee;
-        }
+        /* LOGO搜索面板样式 */
         .logo-search h3 {
             font-size: 16px;
             margin-bottom: 10px;
@@ -143,7 +168,7 @@
             white-space: nowrap;
             background: #1677ff;
         }
-        /* 输入项样式 - 移动端适配 */
+        /* IPTV处理面板样式 */
         .input-item {
             margin-bottom: 15px;
             width: 100%;
@@ -167,7 +192,6 @@
             min-height: 180px;
             resize: vertical;
             line-height: 1.5;
-            /* 修复Safari文本渲染问题 */
             white-space: pre-wrap;
             word-wrap: break-word;
         }
@@ -213,7 +237,6 @@
         .upload {
             margin: 15px 0;
             width: 100%;
-            /* 修复Safari文件选择框样式 */
             position: relative;
             overflow: hidden;
         }
@@ -241,15 +264,6 @@
             font-size: 12px;
             color: #999;
         }
-        /* 苹果下载提示 */
-        .download-tip {
-            font-size: 12px;
-            color: #666;
-            text-align: center;
-            margin-top: 10px;
-            line-height: 1.4;
-        }
-        /* 自定义净化关键词样式 */
         .custom-clean-tip {
             font-size: 12px;
             color: #999;
@@ -299,84 +313,95 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>IPTV工具集 - 全量繁转简</h1>
-        <!-- LOGO模糊搜索模块 -->
-        <div class="logo-search">
-            <h3>频道LOGO模糊搜索</h3>
-            <div class="search-bar">
-                <input type="text" id="searchKey" placeholder="输入关键词（如CCTV、4K、BBC）">
-                <button onclick="fuzzySearchLogo()">模糊搜索</button>
-            </div>
-            <div class="loading" id="loading">正在拉取LOGO列表...</div>
-            <div id="logoResult" class="logo-result"></div>
-        </div>
-        <!-- EPG地址 -->
-        <div class="input-item">
-            <label>EPG 地址</label>
-            <input id="epgUrl" placeholder="请输入EPG地址" value="https://ie.erw.cc/all.xml.gz">
-        </div>
-        <!-- Logo基础地址 -->
-        <div class="input-item">
-            <label>Logo 基础地址（结尾 /）</label>
-            <input id="logoUrlInput" placeholder="请输入Logo基础地址" value="https://cdn.jsdelivr.net/gh/1996TV/LOGO@main/">
-        </div>
-        <!-- 自定义净化关键词输入框 -->
-        <div class="input-item">
-            <label>自定义净化关键词</label>
-            <input id="customCleanKeywords" placeholder="多个关键词用英文逗号分隔，如:测试,备用,无效">
-            <div class="custom-clean-tip">提示：输入后会和默认关键词（高清|HD|超清）一起过滤频道名</div>
-        </div>
-        <div class="checkbox-item">
-            <input type="checkbox" id="cleanName" checked>
-            <label>净化频道名</label>
-        </div>
-        <div class="checkbox-item">
-            <input type="checkbox" id="removeReplay" checked>
-            <label>去除回看 / 回放 / 时移频道</label>
-        </div>
-        <div class="input-item">
-            <label>旧链接前缀</label>
-            <input id="oldLinkPrefix" placeholder="如http://old.com/">
-        </div>
-        <div class="input-item">
-            <label>新链接前缀</label>
-            <input id="newLinkPrefix" placeholder="如http://new.com/">
-        </div>
-        <div class="checkbox-item">
-            <input type="checkbox" id="enableLinkReplace" checked>
-            <label>启用链接替换（转换文件时自动生效）</label>
-        </div>
-        <!-- 全量繁转简开关 -->
-        <div class="checkbox-item">
-            <input type="checkbox" id="enableFullCnConvert" checked>
-            <label>启用全量繁转简（所有操作自动生效）</label>
-        </div>
-        <!-- 修复文件上传区域 -->
-        <div class="input-item">
-            <label>上传文件</label>
-            <div class="upload">
-                <span class="upload-btn" id="uploadBtnText">选取文件</span>
-                <input type="file" id="fileInput" accept=".txt,.m3u,.m3u8" onchange="handleFileUpload(this)">
-            </div>
-            <div class="upload-tip" id="fileTip">支持.txt/.m3u格式，文件编码为UTF-8</div>
-        </div>
-        <textarea id="inputContent" placeholder="粘贴或上传 TXT / M3U 内容"></textarea>
-        
-        <div class="btn-group">
-            <button onclick="txtToM3u()">TXT → M3U</button>
-            <button onclick="m3uToTxt()">M3U → TXT</button>
-            <button onclick="onlyReplaceLink()">只替换链接</button>
-            <button onclick="fullTraditionalToSimplified()">强制繁转简</button>
-            <button onclick="clearAll()">清空内容</button>
-        </div>
-        <div class="func-btn">
-            <button onclick="downloadResult()">下载结果</button>
-            <button onclick="copyResult()">复制结果</button>
-        </div>
-        <div class="download-tip">iOS请点击右上角分享→存储文件，或复制结果手动保存</div>
-        <textarea id="output" placeholder="处理结果" readonly></textarea>
+    <div class="tab-group">
+        <button class="tab-btn active" onclick="switchTab('iptv-panel')">IPTV文件处理</button>
+        <button class="tab-btn" onclick="switchTab('logo-panel')">LOGO模糊搜索</button>
     </div>
+
+    <div class="panel-container">
+        <!-- IPTV文件处理面板 -->
+        <div class="panel active" id="iptv-panel">
+            <h1>IPTV工具集 - 全量繁转简</h1>
+            <!-- EPG地址 -->
+            <div class="input-item">
+                <label>EPG 地址</label>
+                <input id="epgUrl" placeholder="请输入EPG地址" value="https://epg.catvod.com/epg.xml">
+            </div>
+            <!-- Logo基础地址 -->
+            <div class="input-item">
+                <label>Logo 基础地址（结尾 /）</label>
+                <input id="logoUrlInput" placeholder="请输入Logo基础地址" value="https://cdn.jsdelivr.net/gh/1996TV/LOGO@main/">
+            </div>
+            <!-- 自定义净化关键词输入框 -->
+            <div class="input-item">
+                <label>自定义净化关键词</label>
+                <input id="customCleanKeywords" placeholder="多个关键词用英文逗号分隔，如:测试,备用,无效">
+                <div class="custom-clean-tip">提示：输入后会和默认关键词（高清|HD|超清）一起过滤频道名</div>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="cleanName" checked>
+                <label>净化频道名</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="removeReplay" checked>
+                <label>去除回看 / 回放 / 时移频道</label>
+            </div>
+            <div class="input-item">
+                <label>旧链接前缀</label>
+                <input id="oldLinkPrefix" placeholder="如http://old.com/">
+            </div>
+            <div class="input-item">
+                <label>新链接前缀</label>
+                <input id="newLinkPrefix" placeholder="如http://new.com/">
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="enableLinkReplace" checked>
+                <label>启用链接替换（转换文件时自动生效）</label>
+            </div>
+            <!-- 全量繁转简开关 -->
+            <div class="checkbox-item">
+                <input type="checkbox" id="enableFullCnConvert" checked>
+                <label>启用全量繁转简（所有操作自动生效）</label>
+            </div>
+            <!-- 修复文件上传区域 -->
+            <div class="input-item">
+                <label>上传文件</label>
+                <div class="upload">
+                    <span class="upload-btn" id="uploadBtnText">选取文件</span>
+                    <input type="file" id="fileInput" accept=".txt,.m3u,.m3u8" onchange="handleFileUpload(this)">
+                </div>
+                <div class="upload-tip" id="fileTip">支持.txt/.m3u格式，文件编码为UTF-8</div>
+            </div>
+            <textarea id="inputContent" placeholder="粘贴或上传 TXT / M3U 内容"></textarea>
+            
+            <div class="btn-group">
+                <button onclick="txtToM3u()">TXT → M3U</button>
+                <button onclick="m3uToTxt()">M3U → TXT</button>
+                <button onclick="onlyReplaceLink()">只替换链接</button>
+                <button onclick="fullTraditionalToSimplified()">强制繁转简</button>
+                <button onclick="clearAll()">清空内容</button>
+            </div>
+            <div class="func-btn">
+                <button onclick="downloadResult()">下载结果</button>
+                <button onclick="copyResult()">复制结果</button>
+            </div>
+            <textarea id="output" placeholder="处理结果" readonly></textarea>
+        </div>
+
+        <!-- LOGO模糊搜索面板 -->
+        <div class="panel" id="logo-panel">
+            <h1>LOGO模糊搜索</h1>
+            <div class="logo-search">
+                <div class="search-bar">
+                    <input type="text" id="searchKey" placeholder="输入关键词（如CCTV、4K、BBC）">
+                    <button onclick="fuzzySearchLogo()">搜索LOGO</button>
+                </div>
+                <div class="loading" id="loading">正在拉取LOGO列表...</div>
+                <div id="logoResult" class="logo-result"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- LOGO放大预览弹窗 -->
     <div class="logo-preview-modal" id="logoPreviewModal" onclick="closeLogoPreview()">
         <div class="logo-preview-content" onclick="event.stopPropagation()">
@@ -384,6 +409,7 @@
             <button class="logo-preview-close" onclick="closeLogoPreview()">×</button>
         </div>
     </div>
+
     <script>
         // 仓库配置
         const repoOwner = "1996TV";
@@ -391,10 +417,33 @@
         const cdnBase = `https://cdn.jsdelivr.net/gh/${repoOwner}/${repoName}@main/`;
         let allLogoFiles = [];
         // 常量配置
-        const DEFAULT_EPG_URL = "https://ie.erw.cc/all.xml.gz";
+        const DEFAULT_EPG_URL = "https://epg.catvod.com/epg.xml";
         const DEFAULT_LOGO_URL = "https://cdn.jsdelivr.net/gh/1996TV/LOGO@main/";
         const DEFAULT_CLEAN_KEYWORDS = ["高清", "HD", "超清"];
         const CONFIG_STORAGE_KEY = "iptv_tool_config";
+
+        // ========== 面板切换核心函数 ==========
+        function switchTab(panelId) {
+            // 切换按钮状态
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // 切换面板显示
+            document.querySelectorAll('.panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            document.getElementById(panelId).classList.add('active');
+        }
+
+        // ========== LOGO名称标准化函数 ==========
+        function normalizeLogoName(name) {
+            // 1. 去除所有空格和标点符号
+            const noSpacePunct = name.replace(/[\s\p{P}]/gu, '');
+            // 2. 转换为小写
+            return noSpacePunct.toLowerCase();
+        }
 
         // ========== 核心：全量繁简字符映射表（基于OpenCC开源字典） ==========
         const FULL_TRAD_TO_SIMP = new Map([
@@ -416,39 +465,37 @@
             ["利","利"],["暢","畅"],["穩","稳"],["定","定"],["和","和"],["諧","谐"],["平","平"],["幸","幸"],["福","福"],
             ["快","快"],["健","健"],["康","康"],["壽","寿"],["美","美"],["滿","满"],["圓","圆"],["冊","册"],["冪","幂"],
             ["冩","写"],["匯","汇"],["區","区"],["奮","奋"],["奪","夺"],["奧","奥"],["妝","妆"],["婦","妇"],["嫚","嫚"],
-            ["嬌","娇"],["嬰","婴"],["孫","孙"],["學","学"],["寧","宁"],["它","它"],["宮","宫"],["實","实"],["寢","寝"],
-            ["審","审"],["尋","寻"],["導","导"],["將","将"],["爾","尔"],["彌","弥"],["彥","彦"],["影","影"],["德","德"],
-            ["徵","征"],["徑","径"],["待","待"],["律","律"],["後","后"],["復","复"],["循","循"],["微","微"],["徹","彻"],
-            ["慶","庆"],["憶","忆"],["懷","怀"],["憤","愤"],["憂","忧"],["應","应"],["愛","爱"],["感","感"],["慾","欲"],
-            ["歡","欢"],["歐","欧"],["殺","杀"],["毅","毅"],["毆","殴"],["毖","毖"],["氫","氢"],["氬","氩"],["氧","氧"],
-            ["氮","氮"],["氯","氯"],["氖","氖"],["水","水"],["氷","冰"],["永","永"],["沖","冲"],["決","决"],["況","况"],
-            ["泉","泉"],["泊","泊"],["沿","沿"],["泡","泡"],["注","注"],["灑","洒"],["淚","泪"],["淨","净"],["滅","灭"],
-            ["溝","沟"],["漢","汉"],["滬","沪"],["滙","汇"],["滿","满"],["濃","浓"],["濟","济"],["瀝","沥"],["瀘","泸"],
-            ["瀋","沈"],["瀏","浏"],["瀑","瀑"],["火","火"],["災","灾"],["灰","灰"],["炭","炭"],["炮","炮"],["燈","灯"],
-            ["燒","烧"],["燙","烫"],["爛","烂"],["爐","炉"],["爪","爪"],["爬","爬"],["爭","争"],["爰","爰"],["爲","为"],
-            ["疏","疏"],["發","发"],["皺","皱"],["盞","盏"],["盟","盟"],["監","监"],["盤","盘"],["盜","盗"],["眞","真"],
-            ["眡","视"],["眛","昧"],["眞","真"],["矩","矩"],["短","短"],["矮","矮"],["知","知"],["秀","秀"],["私","私"],
-            ["積","积"],["稱","称"],["秘","秘"],["秉","秉"],["科","科"],["秒","秒"],["秋","秋"],["種","种"],["稅","税"],
-            ["程","程"],["積","积"],["稚","稚"],["稱","称"],["稈","秆"],["稻","稻"],["穀","谷"],["穗","穗"],["穫","获"],
-            ["穎","颖"],["錢","钱"],["鐘","钟"],["鈔","钞"],["銀","银"],["銅","铜"],["鐵","铁"],["銹","锈"],["鋁","铝"],
-            ["鋼","钢"],["鋪","铺"],["鍋","锅"],["鍾","钟"],["鏡","镜"],["鏈","链"],["鎖","锁"],["鑰","钥"],["鑽","钻"],
-            ["鑄","铸"],["鑑","鉴"],["鑽","钻"],["長","长"],["門","门"],["閃","闪"],["閉","闭"],["問","问"],["聞","闻"],
-            ["閩","闽"],["閣","阁"],["閨","闺"],["閭","闾"],["閱","阅"],["離","离"],["雜","杂"],["難","难"],["隱","隐"],
-            ["隸","隶"],["隱","隐"],["隨","随"],["隊","队"],["陽","阳"],["陰","阴"],["陣","阵"],["階","阶"],["際","际"],
-            ["陸","陆"],["陳","陈"],["陶","陶"],["陷","陷"],["陣","阵"],["歸","归"],["鄉","乡"],["長","长"],["附","附"],
-            ["院","院"],["隊","队"],["隋","隋"],["隨","随"],["隅","隅"],["隆","隆"],["限","限"],["降","降"],["隔","隔"],
-            ["障","障"],["際","际"],["陸","陆"],["陰","阴"],["陽","阳"],["雄","雄"],["雅","雅"],["集","集"],["雇","雇"],
-            ["雞","鸡"],["雨","雨"],["雪","雪"],["雷","雷"],["雹","雹"],["霜","霜"],["霞","霞"],["露","露"],["靂","雳"],
-            ["靄","霭"],["青","青"],["靜","静"],["靚","靓"],["靠","靠"],["面","面"],["革","革"],["靴","靴"],["靶","靶"],
-            ["鞍","鞍"],["鞘","鞘"],["鞠","鞠"],["鞭","鞭"],["韌","韧"],["韌","韧"],["響","响"],["頁","页"],["頂","顶"],
-            ["項","项"],["順","顺"],["須","须"],["頓","顿"],["頒","颁"],["頂","顶"],["頡","颉"],["頃","顷"],["顆","颗"],
-            ["顏","颜"],["顯","显"],["顏","颜"],["顧","顾"],["風","风"],["飛","飞"],["食","食"],["飢","饥"],["飯","饭"],
-            ["飲","饮"],["飼","饲"],["飾","饰"],["飽","饱"],["飼","饲"],["養","养"],["館","馆"],["餅","饼"],["餃","饺"],
-            ["餓","饿"],["餘","余"],["餐","餐"],["館","馆"],["馥","馥"],["馬","马"],["馳","驰"],["馮","冯"],["駕","驾"],
-            ["駛","驶"],["駐","驻"],["驚","惊"],["驕","骄"],["驟","骤"],["驗","验"],["騷","骚"],["騰","腾"],["騙","骗"],
-            ["騷","骚"],["骨","骨"],["體","体"],["髮","发"],["髭","髭"],["鬚","须"],["鬢","鬓"],["鬥","斗"],["鬧","闹"],
-            ["鬨","哄"],["鬚","须"],["高","高"],["髒","脏"],["鬆","松"],["鼠","鼠"],["鼻","鼻"],["齊","齐"],["齒","齿"],
-            ["齡","龄"],["齒","齿"],["龍","龙"],["龜","龟"],["龜","龟"],["龜","龟"],["龜","龟"],["龜","龟"],["龜","龟"]
+            ["嬌","娇"],["嬰","婴"],["寢","寝"],["審","审"],["尋","寻"],["導","导"],["爾","尔"],["彌","弥"],["彥","彦"],
+            ["影","影"],["德","德"],["徵","征"],["徑","径"],["待","待"],["律","律"],["後","后"],["復","复"],["循","循"],
+            ["微","微"],["徹","彻"],["慶","庆"],["憶","忆"],["懷","怀"],["憤","愤"],["憂","忧"],["應","应"],["愛","爱"],
+            ["感","感"],["慾","欲"],["歡","欢"],["歐","欧"],["殺","杀"],["毅","毅"],["毆","殴"],["毖","毖"],["氫","氢"],
+            ["氬","氩"],["氧","氧"],["氮","氮"],["氯","氯"],["氖","氖"],["水","水"],["氷","冰"],["永","永"],["沖","冲"],
+            ["決","决"],["況","况"],["泉","泉"],["泊","泊"],["沿","沿"],["泡","泡"],["注","注"],["灑","洒"],["淚","泪"],
+            ["淨","净"],["滅","灭"],["溝","沟"],["漢","汉"],["滬","沪"],["滙","汇"],["滿","满"],["濃","浓"],["濟","济"],
+            ["瀝","沥"],["瀘","泸"],["瀋","沈"],["瀏","浏"],["瀑","瀑"],["火","火"],["災","灾"],["灰","灰"],["炭","炭"],
+            ["炮","炮"],["燈","灯"],["燒","烧"],["燙","烫"],["爛","烂"],["爐","炉"],["爪","爪"],["爬","爬"],["爭","争"],
+            ["爰","爰"],["爲","为"],["疏","疏"],["發","发"],["皺","皱"],["盞","盏"],["盟","盟"],["監","监"],["盤","盘"],
+            ["盜","盗"],["眞","真"],["眡","视"],["眛","昧"],["眞","真"],["矩","矩"],["短","短"],["矮","矮"],["知","知"],
+            ["秀","秀"],["私","私"],["積","积"],["稱","称"],["秘","秘"],["秉","秉"],["科","科"],["秒","秒"],["秋","秋"],
+            ["種","种"],["稅","税"],["程","程"],["積","积"],["稚","稚"],["稱","称"],["稈","秆"],["稻","稻"],["穀","谷"],
+            ["穗","穗"],["穫","获"],["穎","颖"],["錢","钱"],["鐘","钟"],["鈔","钞"],["銀","银"],["銅","铜"],["鐵","铁"],
+            ["銹","锈"],["鋁","铝"],["鋼","钢"],["鋪","铺"],["鍋","锅"],["鐘","钟"],["鏡","镜"],["鏈","链"],["鎖","锁"],
+            ["鑰","钥"],["鑽","钻"],["鑄","铸"],["鑑","鉴"],["鑽","钻"],["長","长"],["門","门"],["閃","闪"],["閉","闭"],
+            ["問","问"],["聞","闻"],["閩","闽"],["閣","阁"],["閨","闺"],["閭","闾"],["閱","阅"],["離","离"],["雜","杂"],
+            ["難","难"],["隱","隐"],["隸","隶"],["隨","随"],["隊","队"],["陽","阳"],["陰","阴"],["陣","阵"],["階","阶"],
+            ["際","际"],["陸","陆"],["陳","陈"],["陶","陶"],["陷","陷"],["陣","阵"],["歸","归"],["鄉","乡"],["長","长"],
+            ["附","附"],["院","院"],["隊","队"],["限","限"],["降","降"],["隔","隔"],["障","障"],["際","际"],["陸","陆"],
+            ["陰","阴"],["陽","阳"],["雄","雄"],["雅","雅"],["集","集"],["雇","雇"],["雞","鸡"],["雨","雨"],["雪","雪"],
+            ["雷","雷"],["雹","雹"],["霜","霜"],["霞","霞"],["露","露"],["靂","雳"],["靄","霭"],["青","青"],["靜","静"],
+            ["靚","靓"],["靠","靠"],["面","面"],["革","革"],["靴","靴"],["靶","靶"],["鞍","鞍"],["鞘","鞘"],["鞠","鞠"],
+            ["鞭","鞭"],["韌","韧"],["響","响"],["頁","页"],["頂","顶"],["項","项"],["順","顺"],["須","须"],["頓","顿"],
+            ["頒","颁"],["頂","顶"],["頡","颉"],["頃","顷"],["顆","颗"],["顏","颜"],["顯","显"],["顧","顾"],["風","风"],
+            ["飛","飞"],["食","食"],["飢","饥"],["飯","饭"],["飲","饮"],["飼","饲"],["飾","饰"],["飽","饱"],["飼","饲"],
+            ["養","养"],["館","馆"],["餅","饼"],["餃","饺"],["餓","饿"],["餘","余"],["餐","餐"],["館","馆"],["馥","馥"],
+            ["馬","马"],["馳","驰"],["馮","冯"],["駕","驾"],["駛","驶"],["駐","驻"],["驚","惊"],["驕","骄"],["驟","骤"],
+            ["驗","验"],["騷","骚"],["騰","腾"],["騙","骗"],["騷","骚"],["骨","骨"],["體","体"],["髮","发"],["鬚","须"],
+            ["鬢","鬓"],["鬥","斗"],["鬧","闹"],["鬨","哄"],["鬚","须"],["高","高"],["髒","脏"],["鬆","松"],["鼠","鼠"],
+            ["鼻","鼻"],["齊","齐"],["齒","齿"],["齡","龄"],["齒","齿"],["龍","龙"],["龜","龟"]
         ]);
 
         // 全量繁转简核心函数
@@ -577,7 +624,7 @@
                                 <div class="name">${logoName}</div>
                                 <div class="url">${logoCdnUrl}</div>
                             </div>
-                            <button class="copy-btn" onclick="copyLogoUrl('${logoCdnUrl}')">复制</button>
+                            <button class="copy-btn" onclick="copyLogoUrl('${logoCdnUrl}')">复制链接</button>
                         </div>
                     `;
                 });
@@ -643,7 +690,7 @@
             return url.replace(new RegExp(oldPrefix, 'g'), newPrefix);
         }
 
-        // 苹果下载优化
+        // 下载功能
         function downloadResult() {
             const content = document.getElementById('output').value.trim();
             if (!content) return alert('暂无内容可下载！');
@@ -666,7 +713,7 @@
                 setTimeout(() => {
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-                    alert(`✅ 下载已触发\niOS请通过分享菜单存储文件`);
+                    alert(`✅ 下载已触发`);
                 }, 1000);
             } catch (e1) {
                 console.error('Blob方案失败，尝试降级方案', e1);
@@ -679,7 +726,7 @@
                     a.click();
                     setTimeout(() => {
                         document.body.removeChild(a);
-                        alert(`✅ 降级方案下载成功\niOS请通过分享菜单存储文件`);
+                        alert(`✅ 降级方案下载成功`);
                     }, 500);
                 } catch (e2) {
                     console.error('降级方案也失败', e2);
@@ -722,14 +769,14 @@
             return /(回看|回放|时移|Replay|Catchup|重播)/i.test(n);
         }
 
-        // ========== TXT→M3U ==========
+        // ========== TXT→M3U 核心修改：LOGO名称标准化匹配 ==========
         function txtToM3u() {
             const epg = document.getElementById('epgUrl').value.trim();
             const logoBase = document.getElementById('logoUrlInput').value.replace(/\/$/, '') + '/';
             let input = document.getElementById('inputContent').value.trim();
             if (!input) return alert('请输入TXT内容！');
             
-            // 若开启开关，转换前执行繁转简
+            // 若开启繁转简，转换前执行繁转简
             if (document.getElementById('enableFullCnConvert').checked) {
                 input = convertTraditionalToSimplified(input);
             }
@@ -749,7 +796,23 @@
                 
                 const cleanName = cleanNameFn(name);
                 const playUrl = replaceLink(url);
-                output += `#EXTINF:-1 tvg-name="${cleanName}" tvg-logo="${logoBase}${cleanName}.png" group-title="${group}",${cleanName}\n${playUrl}\n`;
+
+                // 关键修改：标准化频道名用于匹配LOGO
+                const normalizedChannelName = normalizeLogoName(cleanName);
+                // 遍历LOGO文件，找到标准化后匹配的文件
+                let matchedLogo = '';
+                if (allLogoFiles.length > 0) {
+                    for (let file of allLogoFiles) {
+                        const logoFileName = file.name.replace('.png', '');
+                        const normalizedLogoName = normalizeLogoName(logoFileName);
+                        if (normalizedLogoName === normalizedChannelName) {
+                            matchedLogo = logoBase + file.name;
+                            break;
+                        }
+                    }
+                }
+                
+                output += `#EXTINF:-1 tvg-name="${cleanName}" tvg-logo="${matchedLogo}" group-title="${group}",${cleanName}\n${playUrl}\n`;
             });
             document.getElementById('output').value = output;
         }
@@ -759,33 +822,33 @@
             let input = document.getElementById('inputContent').value.trim();
             if (!input) return alert('请输入M3U内容！');
             
-            // 若开启开关，转换前执行繁转简
+            // 若开启繁转简，转换前执行繁转简
             if (document.getElementById('enableFullCnConvert').checked) {
                 input = convertTraditionalToSimplified(input);
             }
             const lines = input.split('\n');
             let output = '';
             let currentGroup = '';
+            let currentName = '';
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
+                if (!line) continue;
+                if (line.startsWith('#EXTM3U')) continue;
                 if (line.startsWith('#EXTINF')) {
-                    const nameMatch = line.match(/,(.*)$/);
+                    // 提取分组和名称
                     const groupMatch = line.match(/group-title="([^"]+)"/);
-                    const name = nameMatch ? nameMatch[1].trim() : '';
-                    const group = groupMatch ? groupMatch[1] : '默认分类';
-                    if (document.getElementById('removeReplay').checked && isReplay(name)) {
-                        i++;
-                        continue;
+                    const nameMatch = line.match(/,(.*)$/);
+                    if (groupMatch) currentGroup = groupMatch[1];
+                    if (nameMatch) currentName = nameMatch[1];
+                } else if (line.startsWith('http')) {
+                    const url = replaceLink(line);
+                    if (document.getElementById('removeReplay').checked && isReplay(currentName)) continue;
+                    const cleanName = cleanNameFn(currentName);
+                    // 输出分组标记
+                    if (currentGroup && !output.includes(`${currentGroup},#genre#`)) {
+                        output += `${currentGroup},#genre#\n`;
                     }
-                    if (group !== currentGroup) {
-                        output += `${group},#genre#\n`;
-                        currentGroup = group;
-                    }
-                    let url = lines[i + 1] ? lines[i + 1].trim() : '';
-                    url = replaceLink(url);
-                    const cleanName = cleanNameFn(name);
                     output += `${cleanName},${url}\n`;
-                    i++;
                 }
             }
             document.getElementById('output').value = output;
