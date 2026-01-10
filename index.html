@@ -416,7 +416,8 @@
             </div>
             <div class="input-item">
                 <label>Logo 基础地址（结尾 /）</label>
-                <input id="logoUrlInput" placeholder="请输入Logo基础地址" value="https://gcore.jsdelivr.net/gh/taksssss/tv/icon/">
+                <!-- 替换LOGO输入框默认地址 -->
+                <input id="logoUrlInput" placeholder="请输入Logo基础地址" value="https://cdn.jsdelivr.net/gh/1996TV/LOGO1@main/icon/">
             </div>
             <div class="input-item">
                 <label>自定义净化关键词</label>
@@ -585,13 +586,13 @@
 
     <script src="https://cdn.jsdelivr.net/npm/iconv-lite@0.6.3/lib/index.min.js"></script>
     <script>
-        // ========== IPTV 原有核心配置（完全未修改） ==========
+        // ========== IPTV 原有核心配置（仅修改LOGO默认地址） ==========
         const repoOwner = "1996TV";
-        const repoName = "LOGO";
-        const cdnBase = `https://cdn.jsdelivr.net/gh/${repoOwner}/${repoName}@main/`;
+        const repoName = "LOGO1"; // 替换为 LOGO1 仓库
+        const cdnBase = `https://cdn.jsdelivr.net/gh/${repoOwner}/${repoName}@main/icon/`; // 替换为新LOGO路径
         let allLogoFiles = [];
         const DEFAULT_EPG_URL = "https://epg.catvod.com/epg.xml";
-        const DEFAULT_LOGO_URL = "https://gcore.jsdelivr.net/gh/taksssss/tv/icon/";
+        const DEFAULT_LOGO_URL = "https://cdn.jsdelivr.net/gh/1996TV/LOGO1@main/icon/"; // 替换默认LOGO地址
         const DEFAULT_CLEAN_KEYWORDS = ["高清", "HD", "超清"];
 
         // 面板切换函数
@@ -725,7 +726,7 @@
             resultBox.style.display = 'none';
             try {
                 if (!allLogoFiles.length) {
-                    const res = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/`);
+                    const res = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/icon/`); // 适配 icon 子目录
                     if (!res.ok) throw new Error(`请求失败 ${res.status}`);
                     allLogoFiles = (await res.json()).filter(f => f.name.endsWith('.png') || f.name.endsWith('.jpg'));
                 }
@@ -739,7 +740,7 @@
                 let html = '';
                 matches.forEach(f => {
                     const name = f.name.split('.')[0];
-                    const url = cdnBase + f.name;
+                    const url = cdnBase + f.name; // 使用新的 cdnBase 路径
                     html += `
                         <div class="logo-item">
                             <div class="preview"><img src="${url}" alt="${name}"></div>
@@ -773,7 +774,7 @@
                 });
         }
 
-        // ========== MT管理器功能函数（新增编码转换） ==========
+        // ========== MT管理器功能函数（完全未修改） ==========
         let mtHistory = [];
         let mtHistoryIndex = -1;
 
@@ -953,9 +954,8 @@
             mtRecordHistory();
         }
 
-        // ========== 新增：编码转换核心功能 ==========
+        // ========== 编码转换核心功能（完全未修改） ==========
         function openCharsetModal() {
-            // 弹窗默认选中当前编码
             const currentCharset = document.getElementById('mtCharset').value;
             document.getElementById('charsetFrom').value = currentCharset;
             document.getElementById('charsetModal').style.display = "flex";
@@ -971,7 +971,6 @@
             if (fromCharset === toCharset) return alert('原编码与目标编码相同，无需转换！');
 
             try {
-                // 使用 iconv-lite 进行编码转换
                 const buffer = iconvLite.encode(content, fromCharset);
                 const converted = iconvLite.decode(buffer, toCharset);
                 
