@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="format-detection" content="telephone=no">
-    <title>IPTV工具集 - 文件转换</title>
+    <title>IPTV工具集 - 分面板版</title>
     <style>
         * {
             margin: 0;
@@ -99,7 +99,7 @@
             box-shadow: 0 4px 0 #0f5ccc, 0 6px 8px rgba(0,0,0,0.15);
             position: relative;
             top: 0;
-            transition: all 0.3s;
+            transition: all 0.15s ease;
         }
         .search-bar button:active {
             top: 2px;
@@ -184,7 +184,7 @@
             box-shadow: 0 3px 0 #0f5ccc, 0 4px 6px rgba(0,0,0,0.1);
             position: relative;
             top: 0;
-            transition: all 0.3s;
+            transition: all 0.15s ease;
         }
         .logo-item .copy-btn:active {
             top: 1px;
@@ -245,7 +245,7 @@
             /* 统一3D效果基础样式 */
             position: relative;
             top: 0;
-            transition: all 0.3s;
+            transition: all 0.15s ease;
         }
         /* 蓝色按钮（选取文件、普通功能按钮） */
         button.blue {
@@ -259,7 +259,7 @@
         /* 红色按钮（清除内容） */
         button.red {
             background: #ff4d4f;
-            color: #fff;
+            color: #fff; /* 清除内容文字红色背景+白色文字 */
             box-shadow: 0 4px 0 #d9363e, 0 6px 8px rgba(0,0,0,0.15);
         }
         button.red:active {
@@ -270,7 +270,7 @@
         button.green {
             background: #52c41a;
             color: #fff;
-            box-shadow: 0 4px 0 #389e0d, 0 6px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 0 #389e0d, 0 6px 8px rgba(0,0,0,0.1);
         }
         button.green:active {
             top: 2px;
@@ -308,7 +308,7 @@
             box-shadow: 0 4px 0 #0f5ccc, 0 6px 8px rgba(0,0,0,0.15);
             position: relative;
             top: 0;
-            transition: all 0.3s;
+            transition: all 0.15s ease;
         }
         .upload-input-label:active {
             top: 2px;
@@ -424,7 +424,7 @@
                 <div id="logoResult" class="logo-result"></div>
             </div>
         </div>
-        <!-- IPTV转换面板（默认显示，已移除默认LOGO输入框） -->
+        <!-- IPTV转换面板（默认显示） -->
         <div class="panel active" id="iptv-panel">
             <h1>IPTV工具集 - 文件转换</h1>
             <!-- EPG地址（默认值不变） -->
@@ -432,10 +432,16 @@
                 <label>EPG 地址</label>
                 <input id="epgUrl" placeholder="请输入EPG地址" value="https://epg.catvod.com/epg.xml">
             </div>
-            <!-- Logo基础地址 - 修改为新地址 -->
+            <!-- Logo基础地址 -->
             <div class="input-item">
                 <label>Logo 基础地址（结尾 /）</label>
-                <input id="logoUrlInput" placeholder="请输入Logo基础地址" value="https://gcore.jsdelivr.net/gh/taksssss/tv/icon/">
+                <input id="logoUrlInput" placeholder="请输入Logo基础地址" value="https://cdn.jsdelivr.net/gh/1996TV/LOGO1@main/icon/">
+            </div>
+            <!-- 新增：默认LOGO地址自定义输入框 -->
+            <div class="input-item">
+                <label>默认LOGO地址（LOGO匹配失败时使用）</label>
+                <input id="fallbackLogoInput" placeholder="请输入默认LOGO地址" value="https://cdn.jsdelivr.net/gh/1996TV/LOGO1@main/icon/mytvsuper.png">
+                <div class="custom-clean-tip">提示：当频道LOGO匹配不到时，将自动使用此地址</div>
             </div>
             <!-- 自定义净化关键词输入框 -->
             <div class="input-item">
@@ -467,7 +473,7 @@
             <div class="upload">
                 <label for="fileInput" class="upload-input-label">选取文件</label>
                 <input type="file" id="fileInput" accept=".txt,.m3u,.m3u8" onchange="readFile(this)">
-                <div class="file-name-display" id="fileNameDisplay"></div>
+                <div class="file-name-display" id="fileNameDisplay"></div> <!-- 文件名显示框 -->
             </div>
             <textarea id="inputContent" placeholder="粘贴或上传 TXT / M3U 内容"></textarea>
             
@@ -475,11 +481,11 @@
                 <button class="blue" onclick="txtToM3u()">TXT → M3U</button>
                 <button class="blue" onclick="m3uToTxt()">M3U → TXT</button>
                 <button class="blue" onclick="onlyReplaceLink()">只替换链接（单独使用）</button>
-                <button class="red" onclick="clearAll()">清空内容</button>
+                <button class="red" onclick="clearAll()">清空内容</button> <!-- 清除内容红色按钮 -->
             </div>
             <div class="func-btn">
-                <button class="green" onclick="downloadResult()">下载结果</button>
-                <button class="green" onclick="copyResult()">复制结果</button>
+                <button class="green" onclick="downloadResult()">下载结果</button> <!-- 绿色按钮 -->
+                <button class="green" onclick="copyResult()">复制结果</button> <!-- 绿色按钮 -->
             </div>
             <div class="download-tip">安卓手机请开启浏览器存储权限，下载后在通知栏查看</div>
             <textarea id="output" placeholder="处理结果" readonly></textarea>
@@ -493,18 +499,20 @@
         </div>
     </div>
     <script>
-        // 仓库配置 - 修改为新的LOGO仓库地址
-        const repoOwner = "taksssss";
-        const repoName = "tv";
-        const cdnBase = `https://gcore.jsdelivr.net/gh/${repoOwner}/${repoName}/icon/`;
+        // 仓库配置（保留原有）
+        const repoOwner = "1996TV";
+        const repoName = "LOGO1";
+        const cdnBase = `https://cdn.jsdelivr.net/gh/${repoOwner}/${repoName}@main/icon/`;
         let allLogoFiles = [];
         // 常量配置（默认值不变）
         const DEFAULT_EPG_URL = "https://epg.catvod.com/epg.xml";
+        const DEFAULT_LOGO_URL = "https://cdn.jsdelivr.net/gh/1996TV/LOGO1@main/icon/";
         const DEFAULT_CLEAN_KEYWORDS = ["高清", "HD", "超清"];
         const CONFIG_STORAGE_KEY = "iptv_tool_config";
-        // 后台预设默认LOGO地址（匹配失败时使用，按要求修改）
-        const DEFAULT_LOGO = "https://cdn.jsdelivr.net/gh/1996TV/LOGO@main/mytvsuper.png";
-
+        // 核心修改：从输入框读取默认LOGO地址，不再固定硬编码
+        function getFallbackLogo() {
+            return document.getElementById('fallbackLogoInput').value.trim() || "https://cdn.jsdelivr.net/gh/1996TV/LOGO1@main/icon/mytvsuper.png";
+        }
         // 面板切换核心函数（完全保留）
         function switchTab(panelId) {
             document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -516,29 +524,28 @@
             });
             document.getElementById(panelId).classList.add('active');
         }
-
-        // 页面加载初始化（保留不读取缓存逻辑）
+        // 页面加载初始化（保留不读取缓存逻辑，新增默认LOGO输入框初始化）
         window.onload = function() {
             localStorage.removeItem(CONFIG_STORAGE_KEY);
             history.replaceState(null, null, window.location.href);
             document.getElementById('epgUrl').value = DEFAULT_EPG_URL;
-            document.getElementById('logoUrlInput').value = cdnBase;
+            document.getElementById('logoUrlInput').value = DEFAULT_LOGO_URL;
+            // 初始化默认LOGO输入框（设置默认值）
+            document.getElementById('fallbackLogoInput').value = "https://cdn.jsdelivr.net/gh/1996TV/LOGO1@main/icon/mytvsuper.png";
             document.getElementById('searchKey').value = '';
             document.getElementById('customCleanKeywords').value = '';
             document.getElementById('oldLinkPrefix').value = '';
             document.getElementById('newLinkPrefix').value = '';
             document.getElementById('inputContent').value = '';
             document.getElementById('output').value = '';
-            document.getElementById('fileNameDisplay').textContent = '';
+            document.getElementById('fileNameDisplay').textContent = ''; // 初始化文件名显示框
             document.getElementById('cleanName').checked = true;
             document.getElementById('removeReplay').checked = true;
             document.getElementById('enableLinkReplace').checked = true;
         }
-
         // 禁用配置存储功能（保留）
         function saveConfig() { return; }
         function loadConfig() { return; }
-
         // LOGO放大预览功能（完全保留）
         function openLogoPreview(imgUrl) {
             const modal = document.getElementById('logoPreviewModal');
@@ -550,33 +557,32 @@
             const modal = document.getElementById('logoPreviewModal');
             modal.style.display = 'none';
         }
-
-        // 支持超1000条文件 - 使用Git Trees API递归获取所有文件（地址已同步修改）
+        // 核心修改：支持超1000条文件 - 使用Git Trees API递归获取所有文件 =====
         async function fetchLogoFiles() {
             try {
+                // 1. 获取仓库默认分支
                 const repoInfoUrl = `https://api.github.com/repos/${repoOwner}/${repoName}`;
                 const repoRes = await fetch(repoInfoUrl);
                 if (!repoRes.ok) throw new Error(`获取仓库信息失败（${repoRes.status}）`);
                 const repoData = await repoRes.json();
                 const defaultBranch = repoData.default_branch;
-
+                // 2. 获取递归目录树（包含所有文件）
                 const treeUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/git/trees/${defaultBranch}?recursive=1`;
                 const treeRes = await fetch(treeUrl);
                 if (!treeRes.ok) throw new Error(`获取目录树失败（${treeRes.status}）`);
                 const treeData = await treeRes.json();
-
+                // 3. 筛选所有png文件
                 allLogoFiles = treeData.tree
-                    .filter(item => item.type === 'blob' && item.path.startsWith('icon/') && item.path.endsWith('.png'))
+                    .filter(item => item.type === 'blob' && item.path.endsWith('.png'))
                     .map(item => ({
-                        name: item.path.split('/').pop(),
-                        downloadUrl: `https://gcore.jsdelivr.net/gh/${repoOwner}/${repoName}/${item.path}`
+                        name: item.path.split('/').pop(), // 文件名
+                        downloadUrl: cdnBase + item.path.split('/').pop() // 拼接CDN链接
                     }));
             } catch (error) {
-                throw new Error(`拉取LOGO列表失败：${error.message}`);
+                throw new Error(`拉取文件失败：${error.message}`);
             }
         }
-
-        // LOGO模糊搜索（保留）
+        // LOGO模糊搜索（逻辑不变，复用修改后的fetchLogoFiles）
         async function fuzzySearchLogo() {
             const key = document.getElementById('searchKey').value.trim().toLowerCase();
             if (!key) {
@@ -590,7 +596,7 @@
             resultBox.style.display = 'none';
             try {
                 if (allLogoFiles.length === 0) {
-                    await fetchLogoFiles();
+                    await fetchLogoFiles(); // 调用修改后的函数
                 }
                 const matchFiles = allLogoFiles.filter(file => 
                     file.name.toLowerCase().includes(key)
@@ -615,7 +621,7 @@
                                 <div class="name">${logoName}</div>
                                 <div class="url">${logoCdnUrl}</div>
                             </div>
-                            <button class="copy-btn" onclick="copyLogoUrl('${logoCdnUrl}')">复制链接</button>
+                            <button class="copy-btn" onclick="copyLogoUrl('${logoCdnUrl}')">复制</button>
                         </div>
                     `;
                 });
@@ -627,8 +633,7 @@
                 console.error('LOGO搜索失败', error);
             }
         }
-
-        // 复制LOGO链接（保留）
+        // 复制LOGO链接（不变）
         function copyLogoUrl(url) {
             navigator.clipboard.writeText(url)
                 .then(() => alert('LOGO链接复制成功！'))
@@ -642,11 +647,11 @@
                     alert('LOGO链接复制成功！');
                 });
         }
-
-        // 读取上传文件（保留）
+        // 读取上传文件（新增文件名显示）
         function readFile(input) {
             const file = input.files[0];
             if (!file) return;
+            // 显示文件名到文件名显示框
             document.getElementById('fileNameDisplay').textContent = file.name;
             const reader = new FileReader();
             reader.onload = e => {
@@ -654,8 +659,7 @@
             };
             reader.readAsText(file);
         }
-
-        // 统一链接替换函数（保留）
+        // 统一链接替换函数（不变）
         function replaceLink(url) {
             if (!document.getElementById('enableLinkReplace').checked) return url;
             const oldPrefix = document.getElementById('oldLinkPrefix').value.trim();
@@ -663,13 +667,12 @@
             if (!oldPrefix || !newPrefix) return url;
             return url.replace(new RegExp(oldPrefix, 'g'), newPrefix);
         }
-
-        // 安卓下载优化（保留）
+        // 安卓下载优化（完全保留）
         function downloadResult() {
             const content = document.getElementById('output').value.trim();
             if (!content) return alert('暂无内容可下载！');
             const ext = content.startsWith('#EXTM3U') ? 'm3u' : 'txt';
-            const fileName = `iptv_${new Date().getTime()}.${ext}`;
+            const fileName = `iptv.${ext}`;
             try {
                 const blob = new Blob([content], { type: 'application/octet-stream' });
                 const url = URL.createObjectURL(blob);
@@ -687,7 +690,7 @@
                 setTimeout(() => {
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-                    alert(`✅ 下载成功！\n文件名：${fileName}`);
+                    alert(`✅ 下载已触发\n文件：${fileName}\n请在通知栏或Download文件夹查看`);
                 }, 1000);
             } catch (e1) {
                 console.error('Blob方案失败，尝试降级方案', e1);
@@ -700,21 +703,20 @@
                     a.click();
                     setTimeout(() => {
                         document.body.removeChild(a);
-                        alert(`✅ 下载成功！\n文件名：${fileName}`);
+                        alert(`✅ 降级方案下载成功\n文件：${fileName}\n请在通知栏查看`);
                     }, 500);
                 } catch (e2) {
                     console.error('降级方案也失败', e2);
-                    alert(`⚠️ 下载失败，请手动复制内容保存`);
+                    alert(`⚠️ 自动下载失败\n请点击【复制结果】按钮，手动粘贴到记事本并保存为 ${fileName}`);
                 }
             }
         }
-
-        // 复制结果（保留）
+        // 复制结果（不变）
         function copyResult() {
             const content = document.getElementById('output').value.trim();
             if (!content) return alert('暂无内容可复制！');
             navigator.clipboard.writeText(content)
-                .then(() => alert('结果复制成功！'))
+                .then(() => alert('结果复制成功！可粘贴到记事本保存'))
                 .catch(() => {
                     const ta = document.createElement('textarea');
                     ta.value = content;
@@ -725,41 +727,47 @@
                     alert('结果复制成功！');
                 });
         }
-
-        // 净化函数（保留修复后逻辑）
-        function cleanNameFn(originalName) {
-            if (!document.getElementById('cleanName').checked) {
-                return originalName.trim();
-            }
-
-            const customInput = document.getElementById('customCleanKeywords').value.trim();
-            const customKeywords = customInput ? customInput.split(',').map(k => k.trim()).filter(k => k) : [];
-            const allKeywords = [...new Set([...DEFAULT_CLEAN_KEYWORDS, ...customKeywords])];
-            
-            let cleanedName = originalName;
+        // 正则转义函数：处理特殊字符
+        function escapeRegExp(str) {
+            return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+        // 核心修复：自定义净化关键词功能（全面加固）
+        function cleanNameFn(n) {
+            // 1. 开启检查
+            if (!document.getElementById('cleanName').checked) return n;
+            console.log('净化前:', n);
+            // 2. 获取自定义关键词
+            let customKeywords = document.getElementById('customCleanKeywords').value.trim()
+                .split(',')
+                .map(k => k.trim())
+                .filter(k => k.length > 0); // 过滤空关键词
+            // 3. 合并默认关键词并去重
+            let allKeywords = [...new Set([...DEFAULT_CLEAN_KEYWORDS, ...customKeywords])];
+            console.log('净化关键词:', allKeywords);
+            let cleanedName = n;
+            // 4. 逐个转义并替换（gi：全局、忽略大小写）
             allKeywords.forEach(keyword => {
-                if (keyword) {
-                    const regex = new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-                    cleanedName = cleanedName.replace(regex, '');
-                }
+                const safeKeyword = escapeRegExp(keyword);
+                const reg = new RegExp(safeKeyword, 'gi');
+                cleanedName = cleanedName.replace(reg, '');
             });
-
+            // 5. 清理空格并返回
             cleanedName = cleanedName.replace(/\s+/g, ' ').trim();
+            console.log('净化后:', cleanedName);
             return cleanedName;
         }
-
-        // 判断是否为回看频道（保留）
+        // 判断是否为回看频道（不变）
         function isReplay(n) {
             return /(回看|回放|时移|Replay|Catchup|重播)/i.test(n);
         }
-
-        // TXT→M3U 保留默认LOGO兜底逻辑（后台自动使用预设地址）
+        // 核心修改：TXT→M3U 从输入框读取默认LOGO，支持自定义 =====
         async function txtToM3u() {
             const epg = document.getElementById('epgUrl').value.trim();
             const logoBase = document.getElementById('logoUrlInput').value.replace(/\/$/, '') + '/';
             const input = document.getElementById('inputContent').value.trim();
             if (!input) return alert('请输入TXT内容！');
             
+            // 先拉取LOGO列表
             if (allLogoFiles.length === 0) {
                 try {
                     await fetchLogoFiles();
@@ -767,7 +775,7 @@
                     console.warn('拉取LOGO列表失败，全部使用默认LOGO:', err);
                 }
             }
-
+            
             const lines = input.split('\n');
             let output = `#EXTM3U x-tvg-url="${epg}"\n`;
             let group = '';
@@ -784,17 +792,16 @@
                 
                 const cleanName = cleanNameFn(name);
                 const playUrl = replaceLink(url);
-
-                const targetLogoName = `${cleanName}.png`;
-                const logoExists = allLogoFiles.some(file => file.name.toLowerCase() === targetLogoName.toLowerCase());
-                const logoUrl = logoExists ? `${logoBase}${targetLogoName}` : DEFAULT_LOGO;
-
-                output += `#EXTINF:-1 tvg-name="${cleanName}" tvg-logo="${logoUrl}" group-title="${group}",${cleanName}\n${playUrl}\n`;
+                // 判断LOGO是否存在
+                const logoExists = allLogoFiles.some(file => file.name.toLowerCase() === `${cleanName}.png`.toLowerCase());
+                // 核心修改：从输入框获取默认LOGO地址，优先级：用户输入 > 硬编码默认值
+                const finalLogoUrl = logoExists ? `${logoBase}${cleanName}.png` : getFallbackLogo();
+                
+                output += `#EXTINF:-1 tvg-name="${cleanName}" tvg-logo="${finalLogoUrl}" group-title="${group}",${cleanName}\n${playUrl}\n`;
             });
             document.getElementById('output').value = output;
         }
-
-        // M3U→TXT（保留原有逻辑）
+        // M3U→TXT（自动替换链接，逻辑不变）
         function m3uToTxt() {
             const input = document.getElementById('inputContent').value.trim();
             if (!input) return alert('请输入M3U内容！');
@@ -802,28 +809,31 @@
             const lines = input.split('\n');
             let output = '';
             let currentGroup = '';
-            let currentName = '';
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
                 if (line.startsWith('#EXTINF')) {
                     const nameMatch = line.match(/,(.*)$/);
                     const groupMatch = line.match(/group-title="([^"]+)"/);
-                    currentName = nameMatch ? nameMatch[1].trim() : '';
-                    currentGroup = groupMatch ? groupMatch[1] : '默认分类';
-                    if (document.getElementById('removeReplay').checked && isReplay(currentName)) {
+                    const name = nameMatch ? nameMatch[1].trim() : '';
+                    const group = groupMatch ? groupMatch[1] : '默认分类';
+                    if (document.getElementById('removeReplay').checked && isReplay(name)) {
+                        i++;
                         continue;
                     }
-                    output += `${currentGroup},#genre#\n`;
-                } else if (line && !line.startsWith('#') && currentName) {
-                    const url = replaceLink(line);
-                    output += `${currentName},${url}\n`;
-                    currentName = '';
+                    if (group !== currentGroup) {
+                        output += `${group},#genre#\n`;
+                        currentGroup = group;
+                    }
+                    let url = lines[i + 1] ? lines[i + 1].trim() : '';
+                    url = replaceLink(url);
+                    const cleanName = cleanNameFn(name);
+                    output += `${cleanName},${url}\n`;
+                    i++;
                 }
             }
             document.getElementById('output').value = output;
         }
-
-        // 单独替换链接（保留）
+        // 单独替换链接（保留原有功能）
         function onlyReplaceLink() {
             const input = document.getElementById('inputContent').value.trim();
             if (!input) return alert('请输入内容！');
@@ -834,12 +844,12 @@
             let output = input.replace(new RegExp(oldPrefix, 'g'), newPrefix);
             document.getElementById('output').value = output;
         }
-
-        // 清空内容（保留）
+        // 清空内容（新增清空文件名显示）
         function clearAll() {
             document.getElementById('inputContent').value = '';
             document.getElementById('output').value = '';
-            document.getElementById('fileNameDisplay').textContent = '';
+            document.getElementById('fileNameDisplay').textContent = ''; // 清空文件名显示框
+            // 保留默认LOGO输入框内容，避免用户重复输入
         }
     </script>
 </body>
